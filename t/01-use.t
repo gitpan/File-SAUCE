@@ -1,5 +1,11 @@
-use Test::More tests => 1;
+use Test::More tests => 2;
 
-BEGIN { 
-    use_ok( 'File::SAUCE' );
+use strict;
+use warnings;
+
+BEGIN {
+	use_ok( 'File::SAUCE' );
 }
+
+my $sauce = File::SAUCE->new;
+isa_ok( $sauce, 'File::SAUCE' );

@@ -18,10 +18,10 @@ for( $zip->members ) {
 	# skip directories
 	next if $_->isDirectory;
 
-	# reset the SAUCE data and read in the file contents
+	# get SAUCE data from file contents
 	$sauce->clear;
-	$sauce->read( scalar $_->contents, 1 );
+	$sauce->read( string => scalar $_->contents );
 
 	# print the result
-	printf( $tmpl, $_->fileName, $sauce->get( 'author', 'title', 'group' ) );
+	printf( $tmpl, $_->fileName, $sauce->author, $sauce->title, $sauce->group );
 }

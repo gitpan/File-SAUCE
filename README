@@ -32,13 +32,12 @@ To install this module type the following:
 
 AUTHOR
 
-Copyright 2003, Brian Cassidy (brian@alternation.net).
-
-Questions, bug reports and suggestions can be emailed directly to me
-at brian@alternation.net.
+Brian Cassidy <bricas@cpan.org>
 
 
-LICENSE
+COPYRIGHT AND LICENSE
+
+Copyright 2004 by Brian Cassidy
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

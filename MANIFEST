@@ -2,18 +2,26 @@ Changes
 lib/File/SAUCE.pm
 examples/sauce-arch.pl
 Makefile.PL
-MANIFEST
+MANIFEST			This list of files
 README
 t/01-use.t
-t/10-setget.t
-t/11-info.t
-t/12-misc.t
-t/20-read.t
-t/30-as_string.t
-t/40-remove.t
-t/50-write.t
+t/02-defaults.t
+t/03-getset.t
+t/10.1-read_exception.t
+t/10.2-read_bogus.t
+t/10.3-read.t
+t/11.1-remove_exception.t
+t/11.2-remove_bogus.t
+t/11.3-remove_spoon.t
+t/11.4-remove.t
+t/12-as_string.t
+t/13-write.t
+t/14-print.t
 t/99-pod.t
-t/bogus.dat
-t/bogus_long.dat
-t/test.dat
+t/data/bogus.dat
+t/data/bogus_comnt.dat
+t/data/bogus_long.dat
+t/data/NA-SEVEN.CIA
+t/data/spoon.dat
+t/data/W7-R666.ANS
 META.yml                                 Module meta-data (added by MakeMaker)

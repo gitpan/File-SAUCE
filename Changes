@@ -1,5 +1,19 @@
 Revision history for Perl extension File::SAUCE.
 
+0.1   Fri Sep 24 2004
+	- another interface overhaul
+	- removed the "guess mode" (must be one of file, handle or string)
+	- using IO modules for file manipulation
+	- removed get and set methods in favor of Class::Accessor methods
+	- updated pack/unpack string to work on different platforms
+	- various code fixes as a result of increasing the test coverage
+	  to 100%
+
+0.08  Tue Feb 10 2004
+	- removed extra boolean requirement for raw data.
+	  old code should still work, though
+	- read() does a clear() as well
+
 0.07  Sat Feb 07 2004
 	- checking endian-ness for pack template portability
 	- added an example script
