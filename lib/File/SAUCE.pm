@@ -3,7 +3,7 @@ package File::SAUCE;
 use strict;
 use Carp;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -30,11 +30,35 @@ my $filetypes = {
 	},
 	Character  => {
 		filetypes => [ qw( ASCII ANSi ANSiMation RIP PCBoard Avatar HTML Source ) ],
-		flags     => { 0 => 'None', 1 => 'iCE Color' }
+		flags     => { 0 => 'None', 1 => 'iCE Color' },
+		tinfo     => [
+			{ tinfo1 => 'Width', tinfo2 => 'Height' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Colors' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height' },
+		]
 	},
 	Graphics   => {
 		filetypes => [ qw( GIF PCX LBM/IFF TGA FLI FLC BMP GL DL WPG PNG JPG MPG AVI ) ],
-		flags     => { 0 => 'None' }
+		flags     => { 0 => 'None' },
+		tinfo     => [
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+		]
 	},
 	Vector     => {
 		filetypes => [ qw( DXF DWG WPG 3DS ) ],
@@ -42,7 +66,29 @@ my $filetypes = {
 	},
 	Sound      => {
 		filetypes => [ qw( MOD 669 STM S3M MTM FAR ULT AMF DMF OKT ROL CMF MIDI SADT VOC WAV SMP8 SMP8S SMP16 SMP16S PATCH8 PATCH16 XM HSC IT ) ],
-		flags     => { 0 => 'None' }
+		flags     => { 0 => 'None' },
+		tinfo     => [
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ },
+			{ tinfo1 => 'Sampling Rate' },
+			{ tinfo1 => 'Sampling Rate' },
+			{ tinfo1 => 'Sampling Rate' },
+			{ tinfo1 => 'Sampling Rate' },
+		]
 	},
 	BinaryText => {
 		filetypes => [ qw( Undefined ) ],
@@ -50,7 +96,10 @@ my $filetypes = {
 	},
 	XBin       => {
 		filetypes => [ qw( Undefined ) ],
-		flags     => { 0 => 'None' }
+		flags     => { 0 => 'None' },
+		tinfo     => [
+			{ tinfo1 => 'Width', tinfo2 => 'Height' },
+		]
 	},
 	Archive    => {
 		filetypes => [ qw( ZIP ARJ LZH ARC TAR ZOO RAR UC2 PAK SQZ ) ],
@@ -436,6 +485,26 @@ sub flags {
 	return $filetypes->{ $_[ 0 ]->datatype }->{ flags }->{ $_[ 0 ]->get_flags };
 }
 
+sub tinfo1 {
+	# Return an english description of info flag (1) or blank if there is none
+	return $filetypes->{ $_[ 0 ]->datatype }->{ tinfo }->[ $_[ 0 ]->get_filetype ]->{ tinfo1 };
+}
+
+sub tinfo2 {
+	# Return an english description of info flag (2) or blank if there is none
+	return $filetypes->{ $_[ 0 ]->datatype }->{ tinfo }->[ $_[ 0 ]->get_filetype ]->{ tinfo2 };
+}
+
+sub tinfo3 {
+	# Return an english description of info flag (3) or blank if there is none
+	return $filetypes->{ $_[ 0 ]->datatype }->{ tinfo }->[ $_[ 0 ]->get_filetype ]->{ tinfo3 };
+}
+
+sub tinfo4 {
+	# Return an english description of info flag (4) or blank if there is none
+	return $filetypes->{ $_[ 0 ]->datatype }->{ tinfo }->[ $_[ 0 ]->get_filetype ]->{ tinfo4 };
+}
+
 sub has_sauce {
 	my $self = shift;
 
@@ -450,8 +519,12 @@ sub pretty_print {
 	my $label = '%' . $width . 's:';
 
 	for( @sauce_fields ) {
-		if( $_ eq 'datatype' || $_ eq 'filetype' || $_ eq 'flags' ) {
+		if( /^(datatype|filetype|flags)$/ ) {
 			printf( "$label %s\n", ucfirst( $_ ), $self->$_ );
+		}
+		elsif( /^tinfo\d$/ ) {
+			printf( "$label %s", ucfirst( $_ ), $self->get( $_ ) );
+			print ( $self->$_ ? ' (' . $self->$_ . ")\n" : "\n" );
 		}
 		elsif( $_ eq 'date' ) {
 			my $date = $self->get_date;
@@ -734,6 +807,22 @@ Return the string version of the file's datatype. Use get_datatype to get the in
 =head2 filetype()
 
 Return the string version of the file's filetype. Use get_filetype to get the integer version.
+
+=head2 tinfo1()
+
+Return an english description of what this info value represents (returns undef if there isn't one)
+
+=head2 tinfo2()
+
+Return an english description of what this info value represents (returns undef if there isn't one)
+
+=head2 tinfo3()
+
+Return an english description of what this info value represents (returns undef if there isn't one)
+
+=head2 tinfo4()
+
+Return an english description of what this info value represents (returns undef if there isn't one)
 
 =head2 flags()
 

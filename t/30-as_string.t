@@ -3,14 +3,16 @@ use Test::More tests => 3;
 BEGIN { 
     use_ok( 'File::SAUCE' );
 }
-my( $mday, $mon, $year ) = ( localtime( time ) )[ 3, 4, 5 ];
-my $today = sprintf( '%4d%02d%02d', $year += 1900, ++$mon, $mday );
+
+my $date = '20031207';
 
 my $expected = 'M&E-!54-%,#`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@' . "\n" .
-'M("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`R,#`S,3$S' . "\n" .
-'G,``````````````````````@("`@("`@("`@("`@("`@("`@("`@' . "\n";
+'M("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`R,#`S,3(P' . "\n" .
+'G-P`````````````````````@("`@("`@("`@("`@("`@("`@("`@' . "\n";
 
 my $sauce = File::SAUCE->new;
+$sauce->set_date( $date );
+
 my $out   = $sauce->as_string;
 
 is( length( $out ), 129, 'length( $sauce->as_string )' );

@@ -1,5 +1,11 @@
 Revision history for Perl extension File::SAUCE.
 
+0.05  Sun Dec 07 2003
+	- still attempting to make t/30-as_string.t pass
+	- added tinfo data
+	- added tinfo1-4 subs and docs
+	- pretty_print now uses tinfo1-4 subs
+
 0.04  Sun Nov 30 2003
 	- the module now "eats its own dog food" (get/set)
 	- fixed pack/unpack template
