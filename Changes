@@ -1,5 +1,22 @@
 Revision history for Perl extension File::SAUCE.
 
+0.02  Sun Apr 06 2003
+	Interface overhaul:
+	- Removed the need to specify a filename on new()
+	- You can specify nothing, a filename, a ref to a filehandle or raw data
+	  for new()
+	- read(), write(), and remove() now require either a filename, a ref
+	  to a filehandle, or raw data to work
+	- when using raw data, you must set the $is_raw_data flag to true
+	  ex: $ansi->read($data, 1);
+	- get_id(), still gets the SAUCE ID, but you can now use get_sauce_id()
+	  and get_comnt_id() to get either ID.
+	- clear() now sets all elements to '', rather than the last version's
+	  defaults
+	- by changing to the above you can check to see if a file has a SAUCE
+	  record by checking the return of get_sauce_id() (eq 'SAUCE' -> yes,
+	  else -> no)
+
 0.01  Mon Mar 10 20:11:04 2003
 	- original version; created by h2xs 1.21 with options
 		-AX File::SAUCE

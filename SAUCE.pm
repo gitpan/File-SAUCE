@@ -3,7 +3,7 @@ package File::SAUCE;
 use strict;
 use Carp;
 
-$File::SAUCE::VERSION = '0.01';
+$File::SAUCE::VERSION = '0.02';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -59,74 +59,131 @@ my $filetypes = {
 };
 
 sub new {
-	my( $class, $filename ) = @_;
-	my $self = {
-		filename => $filename
-	};
+	my( $class, $filedata, $raw ) = @_;
+	my $self = {};
 	bless $self, $class;
 	$self->clear;
-	$self->read or return undef;
+	$self->read( $filedata, $raw ) if $filedata;
 	return $self;
 }
 
-sub read {
+sub clear {
 	my $self = shift;
-	my ($data, %data);
+
+	# Set empty SAUCE and COMMENT values
+
+	@{$self->{record}->{@sauce_fields}}   = '';
+	@{$self->{comments}->{@comnt_fields}} = '';
+}
+
+sub read {
+	my ( $self, $filedata, $raw ) = @_;
+
+	return undef unless $filedata;
+
+	if ( ref( $filedata ) eq 'GLOB' ) {
+		$self->_read_filehandle( $filedata );
+	}
+	elsif ( $raw ) {
+		$self->_read_rawdata( $filedata );
+	}
+	else {
+		$self->_read_filename( $filedata );
+	}
+}
+
+sub _read_filehandle {
+	my ( $self, $filedata ) = @_;
+
+	my $data;
+
+	binmode( $filedata );
+	seek( $filedata, -128, 2 );
+	read( $filedata, $data, 128 );
+
+	$self->_unpack_sauce( $data );
+
+	# Do we have any comments?
+	if( $self->{record}->{comments} > 0 ) {
+		seek( $filedata, -128 - 5 - $self->{record}->{comments} * 64, 2 );
+		read( $filedata, $data, 5 + $self->{record}->{comments} * 64 );
+
+		$self->_unpack_comments( $data );
+	}
+}
+
+sub _read_rawdata {
+	my ( $self, $filedata ) = @_;
+
+	my $data;
+
+	$data = substr( $filedata, length( $filedata ) - 128 );
+
+	$self->_unpack_sauce( $data );
+
+	# Do we have any comments?
+	if( $self->{record}->{comments} > 0 ) {
+		$data = substr( $filedata, -128 - 5 - $self->{record}->{comments} * 64, 5 + $self->{record}->{comments} * 64 );
+
+		$self->_unpack_comments( $data );
+	}	
+}
+
+sub _read_filename {
+	my ( $self, $filedata ) = @_;
+
+	my $data;
 
 	# Stop if the file isn't big enough to hold a SAUCE record
-	return 1 if -s $self->{filename} < 128;
+	return if -s $filedata < 128;
 
-	if ( not open( FILE, $self->{filename} ) ) {
-		$@ = 'File open error (' . $self->{filename} . '): ' . " $!";
+	if ( not open( FILE, $filedata ) ) {
+		$@ = "File open error ($filedata): $!";
 		return;
 	}
 	binmode( FILE );
-	seek( FILE, -128, 2 );
-	read( FILE, $data, 128 );
-	close( FILE ) or carp('File close error (' . $self->{filename} . '): ' . " $!");
+
+	$self->_read_filehandle( \*FILE );
+
+	close( FILE ) or carp( "File close error ($filedata): $!" );
+}
+
+sub _unpack_sauce {
+	my ( $self, $data ) = @_;
 
 	# Stop if our data doesn't have a valid SAUCE ID
-	return 1 unless $data =~ /^SAUCE/;
+	return 0 unless substr( $data, 0, 5 ) eq SAUCE_ID;
+
+	my %data;
 
 	@data{@sauce_fields} = unpack( $sauce_template, $data );
 	$self->{record}      = \%data;
 
-	# Do we have any comments?
-	if ($self->{record}->{comments}) {
-		if ( not open( FILE, $self->{filename} ) ) {
-			$@ = 'File open error (' . $self->{filename} . '): ' . " $!";
-			return;
-		}
-		binmode( FILE );
-		seek( FILE, -128 - 5 - $self->{record}->{comments} * 64, 2 );
-		read( FILE, $data, 5 + $self->{record}->{comments} * 64 );
-		close( FILE ) or carp('File close error (' . $self->{filename} . '): ' . " $!");
+	return 1;
+}
 
-		# We've been fooled, there weren't any comments
-		return 1 unless $data =~ /^COMNT/;
+sub _unpack_comments {
+	my ( $self, $data ) = @_;
 
-		my ($id, @comment_temp) = unpack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x ((length($data) - 5) / 64)), $data );
+	# Stop if our data doesn't have a valid COMMENT ID
+	return 0 unless substr( $data, 0, 5 ) eq COMNT_ID;
 
-		$self->{comments} = {
-			id   => $id,
-			data => \@comment_temp
-		};
-	}
+	my ($id, @comment_temp) = unpack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x ((length($data) - 5) / 64)), $data );
+
+	$self->{comments} = {
+		id   => $id,
+		data => \@comment_temp
+	};
 
 	return 1;
 }
 
 sub write {
-	my $self = shift;
+	my ( $self, $filedata, $raw ) = @_;
 
-	$self->remove;
+	return undef unless $filedata;
 
-	if ( not open( FILE, '>>' . $self->{filename} ) ) {
-		$@ = 'File open error (' . $self->{filename} . '): ' . " $!";
-		return;
-	}
-
-	binmode( FILE );
+	$self->remove( $filedata, $raw );
 
 	# Fix values incase they've been changed
 	$self->{record}->{id}       = SAUCE_ID;
@@ -134,9 +191,27 @@ sub write {
 	$self->{record}->{filler}   = SAUCE_FILLER;
 	$self->{comments}->{id}     = COMNT_ID;
 	$self->{record}->{comments} = scalar @{$self->{comments}->{data}};
-	$self->{record}->{filesize} = ( -s $self->{filename} );
+
+	if ( ref( $filedata ) eq 'GLOB' ) {
+		$self->_write_filehandle( $filedata );
+	}
+	elsif ( $raw ) {
+		return $self->_write_rawdata( $filedata );
+	}
+	else {
+		$self->_write_filename( $filedata );
+	}
+}
+
+sub _write_filehandle {
+	my ( $self, $filedata ) = @_;
+
+	binmode( $filedata );
+
+	# Fix values incase they've been changed
+	$self->{record}->{filesize} = (stat( $filedata ))[7];
 	unless ($self->{record}->{date}) {
-		my ($mday, $mon, $year) = (localtime((stat( FILE ))[9]))[3, 4, 5];
+		my ($mday, $mon, $year) = (localtime((stat( $filedata ))[9]))[3, 4, 5];
 		$self->{record}->{date} = sprintf('%4d%02d%02d', $year += 1900, ++$mon, $mday);
 	}
 
@@ -144,83 +219,96 @@ sub write {
 	my $comments = $self->{comments};
 
 	# EOF marker...
-	print FILE chr(26);
+	print $filedata chr( 26 );
 
 	# Write comments
-	print FILE pack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x $record->{comments}), $comments->{id}, @{$comments->{data}} ) if $record->{comments};
+	print $filedata pack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x $record->{comments}), $comments->{id}, @{$comments->{data}} ) if $record->{comments};
 
 	# Write SAUCE
 	for (0..$#sauce_fields) {
-		print FILE pack( (split(/ /, $sauce_template))[$_], $record->{$sauce_fields[$_]} );
+		print $filedata pack( (split(/ /, $sauce_template))[$_], $record->{$sauce_fields[$_]} );
+	}
+}
+
+sub _write_rawdata {
+	my ( $self, $filedata ) = @_;
+
+	my $record   = $self->{record};
+	my $comments = $self->{comments};
+
+	# EOF marker...
+	$filedata .= chr( 26 );
+
+	# Write comments
+	$filedata .= pack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x $record->{comments}), $comments->{id}, @{$comments->{data}} ) if $record->{comments};
+
+	# Write SAUCE
+	for (0..$#sauce_fields) {
+		$filedata .= pack( (split(/ /, $sauce_template))[$_], $record->{$sauce_fields[$_]} );
+	}
+	
+}
+
+sub _write_filename {
+	my ( $self, $filedata ) = @_;
+
+	if ( not open( FILE, ">>$filedata" ) ) {
+		$@ = "File open error ($filedata): $!";
+		return;
 	}
 
-	close( FILE ) or carp('File close error (' . $self->{filename} . '): ' . " $!");
+	$self->_write_filehandle( \*FILE );
 
-	return 1;
+	close( FILE ) or carp("File close error ($filedata): $!");
 }
 
 sub remove {
-	my $self = shift;
-	my ($data, %data);
+	my ( $self, $filedata, $raw ) = @_;
 
-	# Stop if the file isn't big enough to hold a SAUCE record
-	return 1 if -s $self->{filename} < 128;
+	return undef unless $filedata;
 
-	if ( not open( FILE, $self->{filename} ) ) {
-		$@ = 'File open error (' . $self->{filename} . '): ' . " $!";
-		return;
+	my $sauce = File::SAUCE->new( $filedata, $raw );
+
+	return unless $sauce->get_sauce_id eq SAUCE_ID;
+
+	my $comments = scalar @{$sauce->get_comments};
+
+	if ( ref( $filedata ) eq 'GLOB' ) {
+		$self->_remove_filehandle( $filedata, $comments );
 	}
-
-	binmode( FILE );
-	seek( FILE, -128, 2 );
-	read( FILE, $data, 128 );
-	close( FILE ) or carp('File close error (' . $self->{filename} . '): ' . " $!");
-
-	# did it have SAUCE to begin with?
-	return 1 unless $data =~ /^SAUCE/;
-
-	@data{@sauce_fields} = unpack( $sauce_template, $data );
-
-	if ( not open( FILE, '>>' . $self->{filename} ) ) {
-		$@ = 'File open error (' . $self->{filename} . '): ' . " $!";
-		return;
+	elsif ( $raw ) {
+		return $self->_remove_rawdata( $filedata, $comments );
 	}
-
-	binmode( FILE );
-	# I'm trusting the SAUCE record's comment field, that's probably a bad thing
-	truncate( FILE, (stat(FILE))[7] - 128 - 1 - ($data{comments} ? 5 + $data{comments} * 64 : 0) ) or carp('File truncate error (' . $self->{filename} . '): ' . " $!");
-	close( FILE ) or carp('File close error (' . $self->{filename} . '): ' . " $!");
-
-	return 1;
+	else {
+		$self->_remove_filename( $filedata, $comments );
+	}
 }
 
-sub clear {
-	my $self = shift;
+sub _remove_filehandle {
+	my ( $self, $filedata, $comments ) = @_;
 
-	# Set default SAUCE values
-	$self->{record} = {
-		id       => SAUCE_ID,
-		version  => SAUCE_VERSION,
-		title    => '',
-		author   => '',
-		group    => '',
-		date     => '',
-		filesize => 0,
-		datatype => 0,
-		filetype => 0,
-		tinfo1   => 0,
-		tinfo2   => 0,
-		tinfo3   => 0,
-		tinfo4   => 0,
-		comments => 0,
-		flags    => 0,
-		filler   => SAUCE_FILLER
-	};
+	binmode( $filedata );
 
-	$self->{comments} = {
-		id       => COMNT_ID,
-		data     => []
-	};
+	truncate( $filedata, (stat($filedata))[7] - 128 - 1 - ($comments ? 5 + $comments * 64 : 0) ) or carp( "File truncate error ($filedata): $!" );
+}
+
+sub _remove_rawdata {
+	my ( $self, $filedata, $comments ) = @_;
+
+	return substr( $filedata, 0, (length( $filedata ) - 128 - 1 - ($comments ? 5 + $comments * 64 : 0)) );
+}
+
+sub _remove_filename {
+	my ( $self, $filedata, $comments ) = @_;
+
+	if ( not open( FILE, ">>$filedata" ) ) {
+		$@ = "File open error ($filedata): $!";
+		return;
+	}
+
+	$self->_remove_filehandle( \*FILE, $comments );
+
+	close( FILE ) or carp( "File close error ($filedata): $!" );
 }
 
 sub datatype {
@@ -241,12 +329,11 @@ sub flags {
 sub pretty_print {
 	my $self = shift;
 
-	print '      File: ', uc($self->{filename}), "\n";
-	for (@sauce_fields) {
-		if ($_ eq 'datatype' || $_ eq 'filetype' || $_ eq 'flags') {
-			printf("%10s: %s\n", ucfirst($_), $self->$_);
+	for ( @sauce_fields ) {
+		if ( $_ eq 'datatype' || $_ eq 'filetype' || $_ eq 'flags' ) {
+			printf( "%10s: %s\n", ucfirst($_), $self->$_ );
 		}
-		elsif ($_ eq 'date') {
+		elsif ( $_ eq 'date' ) {
 			printf("      Date: %04d/%02d/%02d\n", , substr($self->{record}->{date}, 0, 4), substr($self->{record}->{date}, 4, 2), substr($self->{record}->{date}, 6, 2));
 		}
 		else {
@@ -256,7 +343,7 @@ sub pretty_print {
 	print 'Comment Id: ', $self->{comments}->{id}, "\n";
 	print '  Comments: ';
 	print "\n" unless $self->{record}->{comments};
-	for (0..$#{$self->{comments}->{data}}) {
+	for ( 0..$#{$self->{comments}->{data}} ) {
 		printf($_ == 0 ? "%s\n" : "            %s\n", $self->{comments}->{data}->[$_]);
 	}
 }
@@ -266,7 +353,13 @@ sub set {
 	my ( $self, %options ) = @_;
 
 	for (  keys %options ) {
-		if ( $_ eq 'comments' ) {
+		if ( $_ eq 'sauce_id' ) {
+			$self->{record}->{id} = $options{$_};
+		}
+		elsif ( $_ eq 'comnt_id' ) {
+			$self->{comments}->{id} = $options{$_};
+		}
+		elsif ( $_ eq 'comments' ) {
 			$self->{record}->{comments} = scalar @{$options{$_}};
 			$self->{comments}->{data} = $options{$_};
 		}
@@ -282,7 +375,15 @@ sub get {
 
 	my @return;
 	for ( @options ) {
-		push @return, /^comments$/ ? $self->{comments}->{data} : $self->{record}->{$_};
+		if ( $_ eq 'sauce_id' ) {
+			push @return, $self->{record}->{id};
+		}
+		elsif ( $_ eq 'comnt_id' ) {
+			push @return, $self->{comments}->{id};
+		}
+		else {
+			push @return, /^comments$/ ? $self->{comments}->{data} : $self->{record}->{$_};
+		}
 	}
 
 	return wantarray ? @return : $return[0];
@@ -317,6 +418,8 @@ File::SAUCE - A library to manipulate SAUCE metadata
 
 	use File::SAUCE;
 
+	# Read the data...
+	# ...a filename, a reference to a filehandle, or raw data
 	my $ansi = File::SAUCE->new('myansi.ans');
 
 	# Print the metadata...
@@ -329,16 +432,19 @@ File::SAUCE - A library to manipulate SAUCE metadata
 	$ansi->set_title('ANSi is 1337');
 
 	# Write the data...
-	$ansi->write;
+	#...a filename, a reference to a filehandle, or raw data
+	$ansi->write('myansi.ans');
 
 	# Clear the in-memory data...
 	$ansi->clear;
 
 	# Read the data... (Note, auto-read when new is called)
-	$ansi->read;
+	#...a filename, a reference to a filehandle, or raw data
+	$ansi->read('myansi.ans');
 
 	# Remove the data...
-	$ansi->remove;
+	#...a filename, a reference to a filehandle, or raw data
+	$ansi->remove('myansi.ans');
 
 =head1 DESCRIPTION
 
@@ -363,7 +469,7 @@ The SAUCE Comments block holds up to 255 comment lines, each 64 characters wide.
 	+----------------+------+------+---------+-----------+
 	| Field          | Size | Type | Default | set / get |
 	+----------------+------+------+---------+-----------+
-	| ID             | 5    | Char | COMNT   | N/A       |
+	| ID             | 5    | Char | COMNT   | comnt_id  |
 	+----------------+------+------+---------+-----------+
 	| Comment Line 1 | 64   | Char |         | comments  |
 	+----------------+------+------+---------+-----------+
@@ -377,7 +483,7 @@ And lastly, the SAUCE Record. It is exactly 128 bytes long:
 	+----------------+------+------+---------+-----------+
 	| Field          | Size | Type | Default | set / get |
 	+----------------+------+------+---------+-----------+
-	| ID             | 5    | Char | SAUCE   | id        |
+	| ID             | 5    | Char | SAUCE   | sauce_id  |
 	+----------------+------+------+---------+-----------+
 	| SAUCE Version  | 2    | Char | 00      | version   |
 	+----------------+------+------+---------+-----------+
@@ -410,7 +516,7 @@ And lastly, the SAUCE Record. It is exactly 128 bytes long:
 	| Filler         | 22   | Byte |         | filler    |
 	+----------------+------+------+---------+-----------+
 
-For more information see ACiD.org's SAUCE page at http://www.acid.org/info/sauce/sauce.htm.
+For more information see ACiD.org's SAUCE page at http://www.acid.org/info/sauce/sauce.htm
 
 =head1 WARNING
 
@@ -430,21 +536,23 @@ The author(s) of this software take no resposibility for loss of data!
 
 =over 4
 
-=item new($filename)
+=item new([$filename or \*FILEHANDLE or $rawdata, $is_raw_data])
 
-Creates a new File::SAUCE object. Reads the file's SAUCE data (by calling C<read>) if it has any.
+Creates a new File::SAUCE object. All arguments are optional. It will read a file's (or raw data's)
+SAUCE data (by calling C<read>) if it has any. If you're reading from raw data, you must specify a
+true value for $is_raw_data, otherwise it is not required.
 
-=item read()
+=item read($filename or \*FILEHANDLE or $rawdata, [$is_raw_data])
 
 Explicitly read's all SAUCE data from the file.
 
-=item write()
+=item write($filename or \*FILEHANDLE or $rawdata, [$is_raw_data])
 
-Writes the in-memory SAUCE data to the file. It calls C<remove> before writing the data.
+Writes the in-memory SAUCE data to the file, or appends it to raw data. It calls C<remove> before writing the data.
 
-=item remove()
+=item remove($filename or \*FILEHANDLE or $rawdata, [$is_raw_data])
 
-Removes any SAUCE data from the file.
+Removes any SAUCE data from the file, or raw data.
 
 =item clear()
 
