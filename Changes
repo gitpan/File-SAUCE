@@ -1,5 +1,23 @@
 Revision history for Perl extension File::SAUCE.
 
+0.04  Sun Nov 30 2003
+	- the module now "eats its own dog food" (get/set)
+	- fixed pack/unpack template
+	- reverted clear() back to settings SAUCE record defaults
+	- from the above change, has_sauce() MUST be used to check if a file
+	  has sauce
+	- added has_sauce() to docs
+	- added get/set sauce_comments (number of comments)
+	- get/set flags now returns/takes a number as output/input
+	- spoon compatibility for SAUCE removal added and documented
+	- suppressed "ambiguous read" warnings by qualifying them with CORE::
+	- comments are actually truncated now, oops.
+	- misc doc fixes
+	- misc code clean-ups
+	- Re-organized the directory structure
+	- using Test::More to test
+	- added several test
+
 0.03  Sun Aug 10 2003
 	- comment lines are auto-trucated when comments are set
 	- comment data is now an array ref even when no comments are available.

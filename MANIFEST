@@ -1,6 +1,12 @@
 Changes
+lib/File/SAUCE.pm
 Makefile.PL
 MANIFEST
 README
-SAUCE.pm
-test.pl
+t/01-use.t
+t/10-setget.t
+t/20-read.t
+t/30-as_string.t
+t/99-pod.t
+t/bogus.dat
+t/test.dat
