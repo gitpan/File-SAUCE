@@ -1,5 +1,21 @@
 Revision history for Perl extension File::SAUCE.
 
+0.03  Sun Aug 10 2003
+	- comment lines are auto-trucated when comments are set
+	- comment data is now an array ref even when no comments are available.
+	- as_string method created (used by all _write* subs)
+	- internal sub _write_raw_data() now explicitly returns the data
+	- _write_raw_data() also auto-fixes file size
+	- SAUCE_ID and COMNT_ID are now exported.
+	- has_sauce() sub added. You can now check SAUCE existance by
+	  doing: if ( $ansi->has_sauce  ) { ... }
+	- auto_date() sub added. It will auto-set the date in the sauce record
+	  (unless it already exists). Calling it with no args uses the current
+	  date. Note: this is auto-called before a write()
+	- convert_localtime() sub added. it takes a localtime-able value and
+	  turns it into a suitable SAUCE record date (uses time() if arg is
+	  omitted)
+
 0.02  Sun Apr 06 2003
 	Interface overhaul:
 	- Removed the need to specify a filename on new()
@@ -20,4 +36,3 @@ Revision history for Perl extension File::SAUCE.
 0.01  Mon Mar 10 20:11:04 2003
 	- original version; created by h2xs 1.21 with options
 		-AX File::SAUCE
-

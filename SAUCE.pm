@@ -3,7 +3,7 @@ package File::SAUCE;
 use strict;
 use Carp;
 
-$File::SAUCE::VERSION = '0.02';
+$File::SAUCE::VERSION = '0.03';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -11,49 +11,54 @@ use constant SAUCE_VERSION => '00';
 use constant SAUCE_FILLER  => ' ' x 22;
 use constant COMNT_ID      => 'COMNT';
 
+# export ID constants
+require Exporter;
+our @ISA = qw(Exporter);
+our @EXPORT = qw( SAUCE_ID COMNT_ID );  
+
 # vars for use with pack() and unpack()
 my $sauce_template = 'A5 A2 A35 A20 A20 A8 L C C S S S S C A23';
-my @sauce_fields   = qw(id version title author group date filesize datatype filetype tinfo1 tinfo2 tinfo3 tinfo4 comments flags filler);
+my @sauce_fields   = qw( id version title author group date filesize datatype filetype tinfo1 tinfo2 tinfo3 tinfo4 comments flags filler );
 my $comnt_template = 'A5 A64';
-my @comnt_fields   = qw(id data);
+my @comnt_fields   = qw( id data );
 
 # define datatypes and filetypes as per SAUCE specs
 my @datatypes = qw(None Character Graphics Vector Sound BinaryText XBin Archive Executable);
 my $filetypes = {
 	None       => {
-		filetypes => [ qw(Undefined) ],
+		filetypes => [ qw( Undefined ) ],
 		flags     => { 0 => 'None' }
 	},
 	Character  => {
-		filetypes => [ qw(ASCII ANSi ANSiMation RIP PCBoard Avatar HTML Source) ],
+		filetypes => [ qw( ASCII ANSi ANSiMation RIP PCBoard Avatar HTML Source ) ],
 		flags     => { 0 => 'None', 1 => 'iCE Color' }
 	},
 	Graphics   => {
-		filetypes => [ qw(GIF PCX LBM/IFF TGA FLI FLC BMP GL DL WPG PNG JPG MPG AVI) ],
+		filetypes => [ qw( GIF PCX LBM/IFF TGA FLI FLC BMP GL DL WPG PNG JPG MPG AVI ) ],
 		flags     => { 0 => 'None' }
 	},
 	Vector     => {
-		filetypes => [ qw(DXF DWG WPG 3DS) ],
+		filetypes => [ qw( DXF DWG WPG 3DS ) ],
 		flags     => { 0 => 'None' }
 	},
 	Sound      => {
-		filetypes => [ qw(MOD 669 STM S3M MTM FAR ULT AMF DMF OKT ROL CMF MIDI SADT VOC WAV SMP8 SMP8S SMP16 SMP16S PATCH8 PATCH16 XM HSC IT) ],
+		filetypes => [ qw( MOD 669 STM S3M MTM FAR ULT AMF DMF OKT ROL CMF MIDI SADT VOC WAV SMP8 SMP8S SMP16 SMP16S PATCH8 PATCH16 XM HSC IT ) ],
 		flags     => { 0 => 'None' }
 	},
 	BinaryText => {
-		filetypes => [ qw(Undefined) ],
+		filetypes => [ qw( Undefined ) ],
 		flags     => { 0 => 'None', 1 => 'iCE Color' }
 	},
 	XBin       => {
-		filetypes => [ qw(Undefined) ],
+		filetypes => [ qw( Undefined ) ],
 		flags     => { 0 => 'None' }
 	},
 	Archive    => {
-		filetypes => [ qw(ZIP ARJ LZH ARC TAR ZOO RAR UC2 PAK SQZ) ],
+		filetypes => [ qw( ZIP ARJ LZH ARC TAR ZOO RAR UC2 PAK SQZ ) ],
 		flags     => { 0 => 'None' }
 	},
 	Executable => {
-		filetypes => [ qw(Undefined) ],
+		filetypes => [ qw( Undefined ) ],
 		flags     => { 0 => 'None' }
 	}
 };
@@ -72,8 +77,9 @@ sub clear {
 
 	# Set empty SAUCE and COMMENT values
 
-	@{$self->{record}->{@sauce_fields}}   = '';
-	@{$self->{comments}->{@comnt_fields}} = '';
+	@{ $self->{record}->{ @sauce_fields } }   = '';
+	@{ $self->{comments}->{ @comnt_fields } } = '';
+	$self->{ comments }->{ data }             = [];
 }
 
 sub read {
@@ -156,8 +162,8 @@ sub _unpack_sauce {
 
 	my %data;
 
-	@data{@sauce_fields} = unpack( $sauce_template, $data );
-	$self->{record}      = \%data;
+	@data{ @sauce_fields } = unpack( $sauce_template, $data );
+	$self->{ record }      = \%data;
 
 	return 1;
 }
@@ -168,9 +174,9 @@ sub _unpack_comments {
 	# Stop if our data doesn't have a valid COMMENT ID
 	return 0 unless substr( $data, 0, 5 ) eq COMNT_ID;
 
-	my ($id, @comment_temp) = unpack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x ((length($data) - 5) / 64)), $data );
+	my ( $id, @comment_temp ) = unpack( ( split( / /, $comnt_template ) )[ 0 ] . ( ( split( / /, $comnt_template ) )[ 1 ] x ( ( length( $data ) - 5 ) / 64 ) ), $data );
 
-	$self->{comments} = {
+	$self->{ comments } = {
 		id   => $id,
 		data => \@comment_temp
 	};
@@ -178,19 +184,43 @@ sub _unpack_comments {
 	return 1;
 }
 
+sub as_string {
+	my $self = shift;
+
+	# Fix values incase they've been changed
+	$self->{ record }->{ id }       = SAUCE_ID;
+	$self->{ record }->{ version }  = SAUCE_VERSION;
+	$self->{ record }->{ filler }   = SAUCE_FILLER;
+	$self->{ comments }->{ id }     = COMNT_ID;
+	$self->{ record }->{ comments } = scalar @{ $self->{ comments }->{ data } };
+
+	my $record   = $self->{ record };
+	my $comments = $self->{ comments };
+
+	# EOF marker...
+	my $output   = chr( 26 );
+
+	# comments...	
+	$output     .= pack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x $record->{comments}), $comments->{id}, @{$comments->{data}} ) if $record->{comments};
+
+	# SAUCE...
+	for (0..$#sauce_fields) {
+		$output .= pack( ( split( / /, $sauce_template ) )[ $_ ], $record->{ $sauce_fields[ $_ ] } );
+	}
+
+	return $output;
+}
+
 sub write {
 	my ( $self, $filedata, $raw ) = @_;
 
 	return undef unless $filedata;
 
-	$self->remove( $filedata, $raw );
+	# Fix file date
+	$self->auto_date( $filedata, $raw );
 
-	# Fix values incase they've been changed
-	$self->{record}->{id}       = SAUCE_ID;
-	$self->{record}->{version}  = SAUCE_VERSION;
-	$self->{record}->{filler}   = SAUCE_FILLER;
-	$self->{comments}->{id}     = COMNT_ID;
-	$self->{record}->{comments} = scalar @{$self->{comments}->{data}};
+	# Remove current SAUCE record
+	$self->remove( $filedata, $raw );
 
 	if ( ref( $filedata ) eq 'GLOB' ) {
 		$self->_write_filehandle( $filedata );
@@ -208,45 +238,21 @@ sub _write_filehandle {
 
 	binmode( $filedata );
 
-	# Fix values incase they've been changed
-	$self->{record}->{filesize} = (stat( $filedata ))[7];
-	unless ($self->{record}->{date}) {
-		my ($mday, $mon, $year) = (localtime((stat( $filedata ))[9]))[3, 4, 5];
-		$self->{record}->{date} = sprintf('%4d%02d%02d', $year += 1900, ++$mon, $mday);
-	}
+	# Fix file size
+	$self->{ record }->{ filesize } = ( stat( $filedata ) )[ 7 ];
 
-	my $record   = $self->{record};
-	my $comments = $self->{comments};
-
-	# EOF marker...
-	print $filedata chr( 26 );
-
-	# Write comments
-	print $filedata pack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x $record->{comments}), $comments->{id}, @{$comments->{data}} ) if $record->{comments};
-
-	# Write SAUCE
-	for (0..$#sauce_fields) {
-		print $filedata pack( (split(/ /, $sauce_template))[$_], $record->{$sauce_fields[$_]} );
-	}
+	print $filedata $self->as_string;
 }
 
 sub _write_rawdata {
 	my ( $self, $filedata ) = @_;
 
-	my $record   = $self->{record};
-	my $comments = $self->{comments};
+	# Fix file size
+	$self->{ record }->{ filesize } = length( $filedata );
 
-	# EOF marker...
-	$filedata .= chr( 26 );
+	$filedata .= $self->as_string;
 
-	# Write comments
-	$filedata .= pack( (split(/ /, $comnt_template))[0] . ((split(/ /, $comnt_template))[1] x $record->{comments}), $comments->{id}, @{$comments->{data}} ) if $record->{comments};
-
-	# Write SAUCE
-	for (0..$#sauce_fields) {
-		$filedata .= pack( (split(/ /, $sauce_template))[$_], $record->{$sauce_fields[$_]} );
-	}
-	
+	return $filedata;
 }
 
 sub _write_filename {
@@ -259,7 +265,7 @@ sub _write_filename {
 
 	$self->_write_filehandle( \*FILE );
 
-	close( FILE ) or carp("File close error ($filedata): $!");
+	close( FILE ) or carp( "File close error ($filedata): $!" );
 }
 
 sub remove {
@@ -271,7 +277,7 @@ sub remove {
 
 	return unless $sauce->get_sauce_id eq SAUCE_ID;
 
-	my $comments = scalar @{$sauce->get_comments};
+	my $comments = scalar @{ $sauce->get_comments };
 
 	if ( ref( $filedata ) eq 'GLOB' ) {
 		$self->_remove_filehandle( $filedata, $comments );
@@ -289,13 +295,13 @@ sub _remove_filehandle {
 
 	binmode( $filedata );
 
-	truncate( $filedata, (stat($filedata))[7] - 128 - 1 - ($comments ? 5 + $comments * 64 : 0) ) or carp( "File truncate error ($filedata): $!" );
+	truncate( $filedata, ( stat( $filedata ) )[ 7 ] - 128 - 1 - ( $comments ? 5 + $comments * 64 : 0 ) ) or carp( "File truncate error ($filedata): $!" );
 }
 
 sub _remove_rawdata {
 	my ( $self, $filedata, $comments ) = @_;
 
-	return substr( $filedata, 0, (length( $filedata ) - 128 - 1 - ($comments ? 5 + $comments * 64 : 0)) );
+	return substr( $filedata, 0, ( length( $filedata ) - 128 - 1 - ( $comments ? 5 + $comments * 64 : 0 ) ) );
 }
 
 sub _remove_filename {
@@ -311,19 +317,62 @@ sub _remove_filename {
 	close( FILE ) or carp( "File close error ($filedata): $!" );
 }
 
+sub auto_date {
+	my ( $self, $filedata, $raw ) = @_;
+
+	# don't do anything if the record already has a date
+	return if $self->{ record }->{ date };
+
+	# current date if raw data or no data
+	if ( not $filedata or $raw ) {
+		$self->{ record }->{ date } = $self->convert_localtime;
+		return;
+	}
+
+	if ( ref( $filedata ) eq 'GLOB' ) {
+		$self->_auto_date_filehandle( $filedata );
+	}
+	else {
+		if ( not open( FILE, "$filedata" ) ) {
+			$@ = "File open error ($filedata): $!";
+			return;
+		}
+
+		$self->_auto_date_filehandle( \*FILE );
+	}
+}
+
+sub _auto_date_filehandle {
+	my ( $self, $filedata ) = @_;
+
+	$self->{ record }->{ date } = $self->convert_localtime( ( stat( $filedata ) )[ 9 ] );
+}
+
+sub convert_localtime {
+	my $self      = shift;
+	my $localtime = shift || time;
+
+	my ( $mday, $mon, $year )   = ( localtime( $localtime ) )[ 3, 4, 5 ];
+	return sprintf( '%4d%02d%02d', $year += 1900, ++$mon, $mday );
+}
+
 sub datatype {
 	# Return the datatype name
-	return $datatypes[$_[0]->{record}->{datatype}];
+	return $datatypes[ $_[ 0 ]->{ record }->{ datatype } ];
 }
 
 sub filetype {
 	# Return the filetype name
-	return $filetypes->{$_[0]->datatype}->{filetypes}->[$_[0]->{record}->{filetype}];
+	return $filetypes->{ $_[ 0 ]->datatype }->{ filetypes }->[ $_[ 0 ]->{ record }->{ filetype } ];
 }
 
 sub flags {
 	# Return an english description of the flags
-	return $filetypes->{$_[0]->datatype}->{flags}->{ord($_[0]->{record}->{flags})};
+	return $filetypes->{ $_[ 0 ]->datatype }->{ flags }->{ ord( $_[ 0 ]->{ record }->{ flags } ) };
+}
+
+sub has_sauce {
+	return $_[ 0 ]->{ record }->{ id } eq SAUCE_ID ? 1 : 0;
 }
 
 sub pretty_print {
@@ -331,20 +380,24 @@ sub pretty_print {
 
 	for ( @sauce_fields ) {
 		if ( $_ eq 'datatype' || $_ eq 'filetype' || $_ eq 'flags' ) {
-			printf( "%10s: %s\n", ucfirst($_), $self->$_ );
+			printf( "%10s: %s\n", ucfirst( $_ ), $self->$_ );
 		}
 		elsif ( $_ eq 'date' ) {
-			printf("      Date: %04d/%02d/%02d\n", , substr($self->{record}->{date}, 0, 4), substr($self->{record}->{date}, 4, 2), substr($self->{record}->{date}, 6, 2));
+			printf( "      Date: %04d/%02d/%02d\n",
+				substr( $self->{ record }->{ date }, 0, 4 ),
+				substr( $self->{ record }->{ date }, 4, 2 ),
+				substr( $self->{ record }->{ date }, 6, 2 )
+			);
 		}
 		else {
-			printf("%10s: %s\n", ucfirst($_), $self->{record}->{$_});
+			printf( "%10s: %s\n", ucfirst( $_ ), $self->{ record }->{ $_ } );
 		}
 	}
-	print 'Comment Id: ', $self->{comments}->{id}, "\n";
+	print 'Comment Id: ', $self->{ comments }->{ id }, "\n";
 	print '  Comments: ';
-	print "\n" unless $self->{record}->{comments};
-	for ( 0..$#{$self->{comments}->{data}} ) {
-		printf($_ == 0 ? "%s\n" : "            %s\n", $self->{comments}->{data}->[$_]);
+	print "\n" unless $self->{ record }->{ comments };
+	for ( 0..$#{ $self->{ comments }->{ data } } ) {
+		printf( $_ == 0 ? "%s\n" : "            %s\n", $self->{ comments }->{ data }->[ $_ ] );
 	}
 }
 
@@ -354,17 +407,20 @@ sub set {
 
 	for (  keys %options ) {
 		if ( $_ eq 'sauce_id' ) {
-			$self->{record}->{id} = $options{$_};
+			$self->{ record }->{ id } = $options{ $_ };
 		}
 		elsif ( $_ eq 'comnt_id' ) {
-			$self->{comments}->{id} = $options{$_};
+			$self->{ comments }->{ id } = $options{ $_ };
 		}
 		elsif ( $_ eq 'comments' ) {
-			$self->{record}->{comments} = scalar @{$options{$_}};
-			$self->{comments}->{data} = $options{$_};
+			# auto-truncate long comment lines
+			substr( $_, 0, 64 ) for @{ $options{ $_ } };
+
+			$self->{ record }->{ comments } = scalar @{ $options{ $_ } };
+			$self->{ comments }->{ data } = $options{ $_ };
 		}
 		else {
-			$self->{record}->{$_} = $options{$_};
+			$self->{ record }->{ $_ } = $options{ $_ };
 		}
 	}
 }
@@ -376,17 +432,17 @@ sub get {
 	my @return;
 	for ( @options ) {
 		if ( $_ eq 'sauce_id' ) {
-			push @return, $self->{record}->{id};
+			push @return, $self->{ record }->{ id };
 		}
 		elsif ( $_ eq 'comnt_id' ) {
-			push @return, $self->{comments}->{id};
+			push @return, $self->{ comments }->{ id };
 		}
 		else {
-			push @return, /^comments$/ ? $self->{comments}->{data} : $self->{record}->{$_};
+			push @return, /^comments$/ ? $self->{ comments }->{ data } : $self->{ record }->{ $_ };
 		}
 	}
 
-	return wantarray ? @return : $return[0];
+	return wantarray ? @return : $return[ 0 ];
 }
 
 # Autoloaded accessors and mutators
@@ -400,7 +456,7 @@ sub AUTOLOAD {
 
 	return if $name =~ /DESTROY/;
 
-	carp(sprintf "No method '$name' available in package %s.", __PACKAGE__) unless $name =~ /^(set|get)_(.+)/;
+	carp( sprintf "No method '$name' available in package %s.", __PACKAGE__ ) unless $name =~ /^(set|get)_(.+)/;
 
 	return $self->get( $2 )  if $1 eq 'get'; 
 	$self->set( $2, $value ) if $1 eq 'set'; 
@@ -422,6 +478,9 @@ File::SAUCE - A library to manipulate SAUCE metadata
 	# ...a filename, a reference to a filehandle, or raw data
 	my $ansi = File::SAUCE->new('myansi.ans');
 
+	# Does the file have a SAUCE rec?
+	print $ansi->get_sauce_id eq SAUCE_ID ? "has SAUCE" : "does not have SAUCE";
+
 	# Print the metadata...
 	$ansi->pretty_print;
 
@@ -430,6 +489,9 @@ File::SAUCE - A library to manipulate SAUCE metadata
 
 	# Set a value...
 	$ansi->set_title('ANSi is 1337');
+
+	# Get the SAUCE record as a string...
+	my $sauce = $ansi->as_string;
 
 	# Write the data...
 	#...a filename, a reference to a filehandle, or raw data
@@ -550,6 +612,10 @@ Explicitly read's all SAUCE data from the file.
 
 Writes the in-memory SAUCE data to the file, or appends it to raw data. It calls C<remove> before writing the data.
 
+=item as_string()
+
+Returns the SAUCE record (including EOF char and comments) as a string.
+
 =item remove($filename or \*FILEHANDLE or $rawdata, [$is_raw_data])
 
 Removes any SAUCE data from the file, or raw data.
@@ -573,6 +639,15 @@ Return the string version of the file's flags. Use get_flags to get the integer 
 =item pretty_print()
 
 View the SAUCE structure (including comments) in a "pretty" format.
+
+=item auto_date( [$filename or \*FILEHANDLE or $rawdata], [$is_raw_data] )
+
+Tries to automatically set the SAUCE record's date. This will do nothing if the record already has
+a date defined. Omitting all args will use the current date.
+
+=item convert_localtime( [$time] )
+
+Converts a localtime-able value into a valid SAUCE record date. Uses time() if no args are passed.
 
 =item set(%options)
 
