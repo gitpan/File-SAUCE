@@ -5,8 +5,13 @@ MANIFEST
 README
 t/01-use.t
 t/10-setget.t
+t/11-info.t
+t/12-misc.t
 t/20-read.t
 t/30-as_string.t
+t/40-remove.t
+t/50-write.t
 t/99-pod.t
 t/bogus.dat
+t/bogus_long.dat
 t/test.dat

@@ -1,4 +1,4 @@
-use Test::More tests => 3;
+use Test::More tests => 5;
 
 BEGIN { 
     use_ok( 'File::SAUCE' );
@@ -11,9 +11,12 @@ my $expected = 'M&E-!54-%,#`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@("`@' .
 'G-P`````````````````````@("`@("`@("`@("`@("`@("`@("`@' . "\n";
 
 my $sauce = File::SAUCE->new;
-$sauce->set_date( $date );
+isa_ok( $sauce, 'File::SAUCE', 'SAUCE record' );
 
-my $out   = $sauce->as_string;
+$sauce->set_date( $date );
+is( $sauce->get_date, $date, 'Date set OK' );
+
+my $out = $sauce->as_string;
 
 is( length( $out ), 129, 'length( $sauce->as_string )' );
 

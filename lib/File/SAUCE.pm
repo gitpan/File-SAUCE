@@ -3,7 +3,7 @@ package File::SAUCE;
 use strict;
 use Carp;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -116,7 +116,7 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 	$self->clear;
-	$self->read( $filedata, $raw ) if $filedata;
+	$self->read( $filedata, $raw ) if @_ >= 2;
 	return $self;
 }
 
@@ -140,7 +140,7 @@ sub clear {
 sub read {
 	my( $self, $filedata, $raw ) = @_;
 
-	return undef unless $filedata;
+	return undef unless @_ >= 2;
 
 	if( ref( $filedata ) eq 'GLOB' ) {
 		$self->_read_filehandle( $filedata );
@@ -177,6 +177,12 @@ sub _read_filehandle {
 sub _read_rawdata {
 	my( $self, $filedata ) = @_;
 
+	# Stop if the file isn't big enough to hold a SAUCE record
+	if( length( $filedata ) < 128 ) {
+		$self->has_sauce( 0 );
+		return;
+	}
+
 	my $data;
 
 	$data = substr( $filedata, length( $filedata ) - 128 );
@@ -196,6 +202,12 @@ sub _read_filename {
 	my( $self, $filedata ) = @_;
 
 	my $data;
+
+	# Stop if the file doesn't exist.
+	if( not -e $filedata ) {
+		$@ = "File doesn't exist";
+		return;
+	}
 
 	# Stop if the file isn't big enough to hold a SAUCE record
 	if( -s $filedata < 128 ) {
@@ -304,7 +316,7 @@ sub as_string {
 sub write {
 	my( $self, $filedata, $raw ) = @_;
 
-	return undef unless $filedata;
+	return undef unless @_ >= 2;
 
 	# Fix file date
 	$self->auto_date( $filedata, $raw );
@@ -338,7 +350,7 @@ sub _write_rawdata {
 	my( $self, $filedata ) = @_;
 
 	# Fix file size
-	$self->set_filesize( length( $filedata ) );
+	$self->set_filesize( length( $filedata ) ) if defined $filedata;
 
 	$filedata .= $self->as_string;
 
@@ -568,7 +580,7 @@ sub set {
 			$self->{ record }->{ comments } = $options{ $_ };
 		}
 		elsif( $_ eq 'date' ) {
-			$self->{ record }->{ date } = $options{ $_ } if $options{ $_ } =~ /^\d+$/;
+			$self->{ record }->{ date } = $options{ $_ } if $options{ $_ } =~ /^(\d+|)$/;
 		}
 		elsif( $_ eq 'comments' ) {
 			# auto-truncate long comment lines

@@ -1,5 +1,9 @@
 Revision history for Perl extension File::SAUCE.
 
+0.06  Mon Dec 15 2003
+	- added more tests
+	- minor bug fixes dealing with undef data
+
 0.05  Sun Dec 07 2003
 	- still attempting to make t/30-as_string.t pass
 	- added tinfo data
