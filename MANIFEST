@@ -17,6 +17,7 @@ t/11.4-remove.t
 t/12-as_string.t
 t/13-write.t
 t/14-print.t
+t/98-pod_coverage.t
 t/99-pod.t
 t/data/bogus.dat
 t/data/bogus_comnt.dat

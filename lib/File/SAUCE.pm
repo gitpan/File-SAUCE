@@ -145,7 +145,7 @@ use Time::Piece;
 
 use base qw( Class::Accessor );
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -533,7 +533,7 @@ sub print {
 
 =head2 datatype( )
 
-Return the string version of the file's datatype. Use get_datatype to get the integer version.
+Return the string version of the file's datatype. Use datatype_id to get the integer version.
 
 =cut
 
@@ -544,7 +544,7 @@ sub datatype {
 
 =head2 filetype( )
 
-Return the string version of the file's filetype. Use get_filetype to get the integer version.
+Return the string version of the file's filetype. Use filetype_id to get the integer version.
 
 =cut
 
@@ -555,7 +555,7 @@ sub filetype {
 
 =head2 flags( )
 
-Return the string version of the file's flags. Use get_flags to get the integer version.
+Return the string version of the file's flags. Use flags_id to get the integer version.
 
 =cut
 
@@ -671,7 +671,7 @@ sub _create_io_object {
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2004 by Brian Cassidy
+Copyright 2005 by Brian Cassidy
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 

@@ -1,5 +1,8 @@
 Revision history for Perl extension File::SAUCE.
 
+0.13  Wed Mar 02 2005
+	- added pod_coverage test
+
 0.12  Mon Sep 27 2004
 	- minor doc fixes
 
