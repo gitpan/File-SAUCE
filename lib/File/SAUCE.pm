@@ -145,7 +145,7 @@ use Time::Piece;
 
 use base qw( Class::Accessor );
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -242,7 +242,7 @@ my $filetypes = {
 
 =head1 PUBLIC METHODS
 
-=head2 new( [ { OPTIONS } ] )
+=head2 new( [ %OPTIONS ] )
 
 Creates a new File::SAUCE object. All arguments are optional. You can pass one
 of two groups of options (as a hash). If you wish to read a SAUCE record from
@@ -309,7 +309,7 @@ sub clear {
 	$self->has_sauce( undef );
 }
 
-=head2 read( { OPTIONS } )
+=head2 read( %OPTIONS )
 
 Tries to read a SAUCE record from a source. Uses the same options as C<new()>.
 
@@ -363,7 +363,7 @@ sub read {
 	}
 }
 
-=head2 write( { OPTIONS } )
+=head2 write( %OPTIONS )
 
 Writes the in-memory SAUCE data to a destination. Uses the same options as
 C<new>. It calls C<remove> before writing the data.
@@ -384,7 +384,7 @@ sub write {
 	return ${ $file->string_ref } if ref $file eq 'IO::String';
 }
 
-=head2 remove( { OPTIONS } )
+=head2 remove( %OPTIONS )
 
 Removes any SAUCE data from the destination. This module enforces spoon
 (ftp://ftp.artpacks.acid.org/pub/artpacks/programs/dos/editors/spn2d161.zip)

@@ -1,5 +1,8 @@
 Revision history for Perl extension File::SAUCE.
 
+0.12  Mon Sep 27 2004
+	- minor doc fixes
+
 0.11  Fri Sep 24 2004
 	- more generic warning testing
 	- re-added clear() on read()
