@@ -145,7 +145,7 @@ use Time::Piece;
 
 use base qw( Class::Accessor );
 
-our $VERSION = '0.1';
+our $VERSION = '0.11';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -319,6 +319,9 @@ sub read {
 	my $self    = shift;
 	my %options = @_;
 	my $file    = $self->_create_io_object( \%options, '<' );
+
+	$self->clear;
+
 	my $buffer;
 	my %info;
 

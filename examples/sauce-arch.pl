@@ -19,7 +19,6 @@ for( $zip->members ) {
 	next if $_->isDirectory;
 
 	# get SAUCE data from file contents
-	$sauce->clear;
 	$sauce->read( string => scalar $_->contents );
 
 	# print the result

@@ -1,5 +1,9 @@
 Revision history for Perl extension File::SAUCE.
 
+0.11  Fri Sep 24 2004
+	- more generic warning testing
+	- re-added clear() on read()
+
 0.1   Fri Sep 24 2004
 	- another interface overhaul
 	- removed the "guess mode" (must be one of file, handle or string)

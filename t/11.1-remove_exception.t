@@ -15,10 +15,10 @@ my $sauce = File::SAUCE->new;
 isa_ok( $sauce, 'File::SAUCE' );
 
 open( FILE, 't/data/NA-SEVEN.CIA' );
-warning_like { $sauce->remove( handle => \*FILE ); } qr/Permission denied|Invalid argument/, 'Remove (fail - read only [CASE 1])';
+warning_like { $sauce->remove( handle => \*FILE ); } { carped => qr/at/ }, 'Remove (fail - read only [CASE 1])';
 close( FILE );
 
 open( FILE, 't/data/spoon.dat' );
-warning_like { $sauce->remove( handle => \*FILE ); } qr/Permission denied|Invalid argument/, 'Remove (fail - read only [CASE 2])';
+warning_like { $sauce->remove( handle => \*FILE ); } { carped => qr/at/ }, 'Remove (fail - read only [CASE 2])';
 close( FILE );
 
