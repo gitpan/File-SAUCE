@@ -1,0 +1,44 @@
+File::SAUCE - A library to manipulate SAUCE metadata
+
+SAUCE stands for Standard Architecture for Universal Comment Extentions. It is used as metadata
+to describe the file to which it is associated. It's most common use has been with the ANSI and
+ASCII "art scene."
+
+
+WARNING
+
+From the SAUCE documenation:
+
+SAUCE was initially created for supporting only the ANSi & RIP screens. Since both ANSi
+and RIP are in effect text-based and have no other form of control but the End-Of-File marker,
+SAUCE should never interfere with the workings of a program using either ANSi or RIP. If it
+does, the program is not functionning the way it should. This is NOT true for the other types
+of files however. Adding SAUCE to some of the other filetypes supported in the SAUCE
+specifications may have serious consequences on the proper functionning of programs using those
+files, In the worst case, they'll simply refuse the file, stating it is invalid. 
+
+The author(s) of this software take no resposibility for loss of data!
+
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+
+AUTHOR
+
+Copyright 2003, Brian Cassidy (brian@alternation.net).
+
+Questions, bug reports and suggestions can be emailed directly to me
+at brian@alternation.net.
+
+
+LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
