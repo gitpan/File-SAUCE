@@ -3,7 +3,7 @@ package File::SAUCE;
 use strict;
 use Carp;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -16,7 +16,9 @@ use base qw( Exporter );
 our @EXPORT = qw( SAUCE_ID COMNT_ID );  
 
 # vars for use with pack() and unpack()
-my $sauce_template = 'A5 A2 A35 A20 A20 A8 L C C S S S S C C A22';
+# check endian-ness for portability
+my $short = ( unpack( 'h*', pack( 's', 1 ) ) =~ /^1/ ) ? 'S' : 'n'; 
+my $sauce_template = "A5 A2 A35 A20 A20 A8 L C C $short $short $short $short C C A22";
 my @sauce_fields   = qw( id version title author group date filesize datatype filetype tinfo1 tinfo2 tinfo3 tinfo4 comments flags filler );
 my $comnt_template = 'A5 A64';
 my @comnt_fields   = qw( id data );
@@ -865,19 +867,25 @@ You can also use C<set_field(value)>, where field is the SAUCE Record field to s
 
 Get an element's (or several elements') value. Similar to above, C<comments> will return an arrayref.
 
-=head1 BUGS
+=head1 AUTHOR
 
-If you have any questions, comments, bug reports or feature suggestions, 
-email them to Brian Cassidy <brian@alternation.net>.
+=over 4 
 
-=head1 CREDITS
+=item * Brian Cassidy E<lt>brian@alternation.netE<gt>
 
-This module was originally written by Brian Cassidy (http://www.alternation.net/) with
-help from Ray Brinzer (http://www.brinzer.net/).
+=back
+
+=head1 SPECIAL THANKS
+
+=over 4
+
+=item * Ray Brinzer
+
+=back
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003 by Brian Cassidy
+Copyright 2004 by Brian Cassidy
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 

@@ -1,5 +1,6 @@
 Changes
 lib/File/SAUCE.pm
+examples/sauce-arch.pl
 Makefile.PL
 MANIFEST
 README
@@ -15,3 +16,4 @@ t/99-pod.t
 t/bogus.dat
 t/bogus_long.dat
 t/test.dat
+META.yml                                 Module meta-data (added by MakeMaker)

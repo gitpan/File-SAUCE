@@ -1,5 +1,9 @@
 Revision history for Perl extension File::SAUCE.
 
+0.07  Sat Feb 07 2004
+	- checking endian-ness for pack template portability
+	- added an example script
+
 0.06  Mon Dec 15 2003
 	- added more tests
 	- minor bug fixes dealing with undef data
