@@ -1,16 +1,20 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         File-SAUCE
-version:      0.13
-version_from: lib/File/SAUCE.pm
-installdirs:  site
+---
+name: File-SAUCE
+version: 0.2
+author:
+  - Brian Cassidy <bricas@cpan.org>
+abstract: A library to manipulate SAUCE metadata
+license: perl
 requires:
-    Class::Accessor:               0
-    File::Slurp:                   0
-    IO::File:                      0
-    IO::String:                    0
-    Test::More:                    0
-    Time::Piece:                   0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+  Class::Accessor: 0
+  FileHandle: 0
+  IO::String: 1.06
+  Time::Piece: 0
+build_requires:
+  File::Slurp: 0
+  Test::More: 0
+provides:
+  File::SAUCE:
+    file: lib/File/SAUCE.pm
+    version: 0.2
+generated_by: Module::Build version 0.2611

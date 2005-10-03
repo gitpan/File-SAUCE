@@ -134,18 +134,34 @@ From the SAUCE documenation:
 
 The author(s) of this software take no resposibility for loss of data!
 
+=head1 INSTALLATION
+
+To install this module via Module::Build:
+
+	perl Build.PL
+	./Build         # or `perl Build`
+	./Build test    # or `perl Build test`
+	./Build install # or `perl Build install`
+
+To install this module via ExtUtils::MakeMaker:
+
+	perl Makefile.PL
+	make
+	make test
+	make install
+
 =cut
 
 use strict;
 use warnings;
 use Carp;
-use IO::File;
+use FileHandle;
 use IO::String;
 use Time::Piece;
 
 use base qw( Class::Accessor );
 
-our $VERSION = '0.13';
+our $VERSION = '0.2';
 
 # some SAUCE constants
 use constant SAUCE_ID      => 'SAUCE';
@@ -173,32 +189,16 @@ my $filetypes = {
 		filetypes => [ qw( ASCII ANSi ANSiMation RIP PCBoard Avatar HTML Source ) ],
 		flags     => { 0 => 'None', 1 => 'iCE Color' },
 		tinfo     => [
-			{ tinfo1 => 'Width', tinfo2 => 'Height' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height' },
+			( { tinfo1 => 'Width', tinfo2 => 'Height' } ) x 3,
 			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Colors' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height' },
+			( { tinfo1 => 'Width', tinfo2 => 'Height' } ) x 2
 		]
 	},
 	Graphics   => {
 		filetypes => [ qw( GIF PCX LBM/IFF TGA FLI FLC BMP GL DL WPG PNG JPG MPG AVI ) ],
 		flags     => { 0 => 'None' },
 		tinfo     => [
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
-			{ tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' },
+			( { tinfo1 => 'Width', tinfo2 => 'Height', tinfo3 => 'Bits Per Pixel' } ) x 14
 		]
 	},
 	Vector     => {
@@ -209,14 +209,8 @@ my $filetypes = {
 		filetypes => [ qw( MOD 669 STM S3M MTM FAR ULT AMF DMF OKT ROL CMF MIDI SADT VOC WAV SMP8 SMP8S SMP16 SMP16S PATCH8 PATCH16 XM HSC IT ) ],
 		flags     => { 0 => 'None' },
 		tinfo     => [
-			{ }, { }, { }, { },
-			{ }, { }, { }, { },
-			{ }, { }, { }, { },
-			{ }, { }, { }, { },
-			{ tinfo1 => 'Sampling Rate' },
-			{ tinfo1 => 'Sampling Rate' },
-			{ tinfo1 => 'Sampling Rate' },
-			{ tinfo1 => 'Sampling Rate' },
+			( { } ) x 16,
+			( { tinfo1 => 'Sampling Rate' } ) x 4
 		]
 	},
 	BinaryText => {
@@ -330,7 +324,7 @@ sub read {
 		return;
 	}
 
-	seek( $file, -128, 2 );
+	$file->seek( -128, 2 );
 	$file->read( $buffer, 128 );
 
 	if( substr( $buffer, 0, 5 ) ne SAUCE_ID ) {
@@ -351,7 +345,7 @@ sub read {
 	$self->has_sauce( 1 );
 
 	if( $comments > 0 ) {
-		seek( $file, -128 - 5 - $comments * 64, 2 );
+		$file->seek( -128 - 5 - $comments * 64, 2 );
 		$file->read( $buffer, 5 + $comments * 64 );
 
 		if( substr( $buffer, 0, 5 ) eq COMNT_ID ) {
@@ -378,7 +372,7 @@ sub write {
 	my %options = @_;
 	my $file    = $self->_create_io_object( \%options, '>>' );
 
-	seek( $file, 0, 2 );
+	$file->seek( 0, 2 );
 	$file->print( $self->as_string );
 
 	return ${ $file->string_ref } if ref $file eq 'IO::String';
@@ -632,7 +626,7 @@ sub date {
 
 =head2 _create_io_object( { OPTIONS }, MODE )
 
-Generates an IO object. Uses IO::File or IO::String.
+Generates an IO object. Uses FileHandle or IO::String.
 
 =cut
 
@@ -645,7 +639,7 @@ sub _create_io_object {
 
 	# use appropriate IO object for what we get in
 	if( exists $options{ file } ) {
-		$file = IO::File->new( $options{ file }, $perms ) or croak "$!";
+		$file = FileHandle->new( $options{ file }, $perms ) or croak "$!";
 	}
 	elsif( exists $options{ string } ) {
 		$file = IO::String->new( $options{ string } );
@@ -657,7 +651,7 @@ sub _create_io_object {
 		croak( "No valid read type. Must be one of 'file', 'string' or 'handle'." );
 	}
 
-	binmode( $file );
+	$file->binmode;
 	return $file;
 }
 
