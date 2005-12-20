@@ -1,6 +1,6 @@
 ---
 name: File-SAUCE
-version: 0.2
+version: 0.21
 author:
   - Brian Cassidy <bricas@cpan.org>
 abstract: A library to manipulate SAUCE metadata
@@ -16,5 +16,5 @@ build_requires:
 provides:
   File::SAUCE:
     file: lib/File/SAUCE.pm
-    version: 0.2
+    version: 0.21
 generated_by: Module::Build version 0.2611
