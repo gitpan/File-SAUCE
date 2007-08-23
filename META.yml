@@ -1,20 +1,21 @@
----
-name: File-SAUCE
-version: 0.21
-author:
-  - Brian Cassidy <bricas@cpan.org>
+--- 
 abstract: A library to manipulate SAUCE metadata
+author: Brian Cassidy <bricas@cpan.org>
+distribution_type: module
+generated_by: Module::Install version 0.67
 license: perl
-requires:
+meta-spec: 
+  url: http://module-build.sourceforge.net/META-spec-v1.3.html
+  version: 1.3
+name: File-SAUCE
+no_index: 
+  directory: 
+    - inc
+    - t
+requires: 
   Class::Accessor: 0
   FileHandle: 0
   IO::String: 1.06
-  Time::Piece: 0
-build_requires:
-  File::Slurp: 0
   Test::More: 0
-provides:
-  File::SAUCE:
-    file: lib/File/SAUCE.pm
-    version: 0.21
-generated_by: Module::Build version 0.2611
+  Time::Piece: 0
+version: 0.22

@@ -1,9 +1,21 @@
-Build.PL
 Changes
-lib/File/SAUCE.pm
 examples/sauce-arch.pl
+inc/Module/AutoInstall.pm
+inc/Module/Install.pm
+inc/Module/Install/AutoInstall.pm
+inc/Module/Install/Base.pm
+inc/Module/Install/Can.pm
+inc/Module/Install/Fetch.pm
+inc/Module/Install/Include.pm
+inc/Module/Install/Makefile.pm
+inc/Module/Install/Metadata.pm
+inc/Module/Install/Win32.pm
+inc/Module/Install/WriteAll.pm
+lib/File/SAUCE.pm
+Makefile.PL
 MANIFEST			This list of files
 META.yml
+README
 t/01-use.t
 t/02-defaults.t
 t/03-getset.t
@@ -25,5 +37,3 @@ t/data/bogus_long.dat
 t/data/NA-SEVEN.CIA
 t/data/spoon.dat
 t/data/W7-R666.ANS
-Makefile.PL
-README
